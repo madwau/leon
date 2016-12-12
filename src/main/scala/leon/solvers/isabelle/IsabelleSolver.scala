@@ -15,7 +15,7 @@ import leon.solvers._
 import leon.utils.Interruptible
 import leon.verification.VC
 
-import info.hupel.isabelle._
+import info.hupel.isabelle.{Program => _, _}
 import info.hupel.isabelle.pure.{Expr => _, _}
 import monix.execution.{Cancelable, CancelableFuture}
 

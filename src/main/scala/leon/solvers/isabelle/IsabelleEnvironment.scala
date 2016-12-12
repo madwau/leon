@@ -18,9 +18,7 @@ import leon.purescala.Common._
 import leon.solvers._
 import leon.utils._
 
-import cats.data.Xor
-
-import info.hupel.isabelle._
+import info.hupel.isabelle.{Program => _, _}
 import info.hupel.isabelle.api._
 import info.hupel.isabelle.setup._
 
@@ -55,27 +53,24 @@ object IsabelleEnvironment {
     }.toList
 
     context.reporter.info(s"Preparing Isabelle setup (this might take a while) ...")
-    val setup = Setup.defaultSetup(version) match {
-      case Xor.Left(reason) => context.reporter.fatalError(s"Isabelle setup failed: ${reason.explain}")
-      case Xor.Right(setup) => setup
+    val setup = Setup.default(version) match {
+      case Left(reason) => context.reporter.fatalError(s"Isabelle setup failed: ${reason.explain}")
+      case Right(setup) => setup
     }
 
     val resources = Resources.dumpIsabelleResources() match {
-      case Xor.Left(reason) => context.reporter.fatalError(s"Resource dump failed: ${reason.explain}")
-      case Xor.Right(resources) => resources
+      case Left(reason) => context.reporter.fatalError(s"Resource dump failed: ${reason.explain}")
+      case Right(resources) => resources
     }
 
-    val system = setup.flatMap { setup =>
-      val config = resources.makeConfiguration(Nil, "Leon")
+    val config = resources.makeConfiguration(Nil, "Leon")
+    val system = setup.makeEnvironment.flatMap { env =>
+      context.reporter.info(s"Building session ...")
+      if (!System.build(env, config))
+        context.reporter.internalError("Build failed")
 
-      setup.makeEnvironment.flatMap { env =>
-        context.reporter.info(s"Building session ...")
-        if (!System.build(env, config))
-          context.reporter.internalError("Build failed")
-
-        context.reporter.info(s"Starting $version instance ...")
-        System.create(env, config)
-      }
+      context.reporter.info(s"Starting $version instance ...")
+      System.create(env, config)
     }
 
     val thy = system.flatMap { system =>
