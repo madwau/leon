@@ -40,7 +40,7 @@ resolvers ++= Seq(
   "Sonatype OSS Releases" at "https://oss.sonatype.org/content/repositories/releases"
 )
 
-val libisabelleVer = "0.6.3"
+val libisabelleVer = "0.6.5"
 
 enablePlugins(LibisabellePlugin)
 
