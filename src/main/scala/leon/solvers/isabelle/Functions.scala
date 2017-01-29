@@ -91,25 +91,29 @@ final class Functions(context: LeonContext, program: Program, types: Types, funs
 
       val full = fun.annotations.contains("isabelle.fullBody")
       val none = fun.annotations.contains("isabelle.noBody")
+      val ind  = fun.annotations.contains("isabelle.inductive")
       val ext  = fun.annotations.contains("extern")
 
       if (ext && none)
         context.reporter.warning(s"Redundant isabelle.noBody annotation for function definition $qname; extern already elides the body")
 
-      val body = (full, none || ext) match {
-        case (true, false) =>
+      val body = (full, none || ext, ind) match {
+        case (true, false, false) =>
           translator.term(fun.fullBody, Nil, lookup)
-        case (false, true) =>
+        case (false, true, false) =>
           translator.mkFreshError(None)
-        case (false, false) =>
+        case (false, false, false) =>
           fun.body match {
             case Some(body) =>
               translator.term(body, Nil, lookup)
             case None =>
               context.reporter.fatalError(s"No body present for function definition $qname")
           }
-        case (true, true) =>
+        case (true, true, false) =>
           context.reporter.fatalError(s"Conflicting annotations for function definition $qname; cannot combine isabelle.fullBody with extern or isabelle.noBody")
+        case (false, false, true) =>
+          val _ = println(s"Inductive detected.")
+          translator.term(fun.fullBody, Nil, lookup)
       }
 
       for {
@@ -118,7 +122,7 @@ final class Functions(context: LeonContext, program: Program, types: Types, funs
         typ <- types.typ(fun.returnType, strict = true)
       }
       yield
-        (name, params, (body, typ))
+        ((name, ind), params, (body, typ))
     }}.flatMap(system.invoke(Functions)).assertSuccess(context).flatMap {
       case Some(msg) =>
         context.reporter.fatalError(s"Error in function definition; this usually means that termination could not be proven; error message: $msg")

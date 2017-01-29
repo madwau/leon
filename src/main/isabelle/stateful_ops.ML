@@ -9,7 +9,7 @@ signature STATEFUL_OPS = sig
   val assume_equivalences: (string * string) list -> unit
   val lemmas: (string * term) list -> string list
   val assume_lemmas: (string * term) list -> unit
-  val functions: (string * (string * typ) list * (term * typ)) list -> string option
+  val functions: ((string * bool) * (string * typ) list * (term * typ)) list -> string option
   val datatypes: (string * string list * (string * (string * typ) list) list) list -> string option
   val lookup_datatype: string * (string * string) list -> (string, (string * (term * term * term list)) list) Codec.either
   val pretty: term -> string
@@ -309,8 +309,10 @@ fun functions raw_funs =
   update_loaded (fn lthy =>
     let
       val (_, lthy) = Local_Theory.open_target lthy
+      
+      val names = map #1 (map #1 raw_funs)
 
-      fun transform (name, raw_args, (raw_rhs, expected_typ)) =
+      fun transform ((name, ind), raw_args, (raw_rhs, expected_typ)) =
         let
           val lhs = list_comb (Free (name, dummyT), map Free raw_args)
           val rhs = Type.constraint expected_typ raw_rhs
@@ -338,6 +340,47 @@ fun functions raw_funs =
               exists (equal f o Free) (all_frees rhs)
             end
         | _ => true
+        
+      val inductive = not (exists (equal false) (map #2 (map #1 raw_funs)))
+
+      val _ = @{print} ("Inductive: " ^ @{make_string} inductive)
+      
+      fun define_inductive (id, typ) clauses lthy =
+         let 
+           fun bind_def id = (Binding.name (Thm.def_name id), [])
+           fun bind_mixfix id = (Binding.name id, NoSyn)
+        
+           val term_bindings = map (fn (id, term) => ((Binding.name id, []), term)) clauses
+      
+           val (_, lthy') =
+            Inductive.add_ind_def
+               {quiet_mode = false, verbose = false, alt_name = Binding.empty,
+                  coind = false, no_elim = false, no_ind = false, skip_mono = false}
+               [Free (id, typ)]
+               term_bindings
+               []
+               []
+               [bind_mixfix id]
+               lthy
+         in
+           lthy'
+         end
+ 
+      fun ind_construction lthy =
+        let
+          val _ = @{print} "ind_construction called."
+          
+          val (heads, props) = split_list specs
+          val _ = @{print} heads
+          val _ = @{print} props
+        
+         val lthy' = define_inductive ("ev", @{typ "nat \<Rightarrow> bool"})
+                                      [("ev0", @{prop "ev (0::nat)"}),
+                                       ("evSS", @{prop "\<And>n. ev n \<Longrightarrow> ev (Suc (Suc n))"})]
+                                      lthy
+        in
+          ([], lthy')
+        end
 
       fun fun_construction lthy =
         let
@@ -350,6 +393,7 @@ fun functions raw_funs =
           |> the_error "simps of function definition" @{here}
           |> rpair lthy
         end
+
       fun def_construction lthy =
         let val [(head, prop)] = specs in
           Specification.definition (SOME head, prop) lthy
@@ -357,15 +401,15 @@ fun functions raw_funs =
         end
 
       fun construction lthy = lthy |>
-        (case (recursive, no_args) of
-          (true, true) => raise Unsupported ("Mutual definition without arguments: " ^ commas (map #1 raw_funs))
-        | (true, false) => fun_construction
-        | (false, _) => def_construction)
+        (case (recursive, no_args, inductive) of
+          (true, true, false) => raise Unsupported ("Mutual definition without arguments: " ^ commas names)
+        | (true, false, false) => fun_construction
+        | (false, _, false) => def_construction
+        | (_, _, true) => ind_construction)
     in
       case Exn.interruptible_capture construction lthy of
         Exn.Res (thms, lthy') =>
           let
-            val names = map #1 raw_funs
             val get_typ =
               Thm.prop_of #> HOLogic.dest_Trueprop #> HOLogic.dest_eq #> fst
               #> strip_comb #> fst

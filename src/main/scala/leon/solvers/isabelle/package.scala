@@ -129,7 +129,7 @@ object `package` {
   val Cases = Operation.implicitly[((Term, List[(String, Typ)]), (Typ, List[(Term, Term)])), Term]("cases")
   val SerialNat = Operation.implicitly[Unit, Term]("serial_nat")
   val MapLiteral = Operation.implicitly[(List[(Term, Term)], (Typ, Typ)), Term]("map_literal")
-  val Functions = Operation.implicitly[(List[(String, List[(String, Typ)], (Term, Typ))]), Option[String]]("functions")
+  val Functions = Operation.implicitly[(List[((String, Boolean), List[(String, Typ)], (Term, Typ))]), Option[String]]("functions")
   val Declare = Operation.implicitly[List[String], Unit]("declare")
   val Equivalences = Operation.implicitly[List[(String, String)], List[String]]("equivalences")
   val AssumeEquivalences = Operation.implicitly[List[(String, String)], Unit]("assume_equivalences")
