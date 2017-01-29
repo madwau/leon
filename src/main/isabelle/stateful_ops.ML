@@ -350,14 +350,14 @@ fun functions raw_funs =
            fun bind_def id = (Binding.name (Thm.def_name id), [])
            fun bind_mixfix id = (Binding.name id, NoSyn)
         
-           val term_bindings = map (fn (id, term) => ((Binding.name id, []), term)) clauses
+          (* val term_bindings = map (fn (id, term) => ((Binding.name id, []), term)) clauses *)
       
            val (_, lthy') =
             Inductive.add_ind_def
                {quiet_mode = false, verbose = false, alt_name = Binding.empty,
                   coind = false, no_elim = false, no_ind = false, skip_mono = false}
                [Free (id, typ)]
-               term_bindings
+               clauses
                []
                []
                [bind_mixfix id]
@@ -371,13 +371,10 @@ fun functions raw_funs =
           val _ = @{print} "ind_construction called."
           
           val (heads, props) = split_list specs
-          val _ = @{print} heads
-          val _ = @{print} props
+          val _ = @{print} ("heads: " ^ @{make_string} heads)
+          val _ = @{print} ("props: " ^ @{make_string} props)
         
-         val lthy' = define_inductive ("ev", @{typ "nat \<Rightarrow> bool"})
-                                      [("ev0", @{prop "ev (0::nat)"}),
-                                       ("evSS", @{prop "\<And>n. ev n \<Longrightarrow> ev (Suc (Suc n))"})]
-                                      lthy
+         val lthy' = define_inductive ("even", @{typ "nat \<Rightarrow> bool"}) props lthy
         in
           ([], lthy')
         end
