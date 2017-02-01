@@ -7,11 +7,6 @@ object TestInductive {
   case class Suc(value: IndInt) extends IndInt
   case object Zero extends IndInt
 
-  def indInt(n: Int): IndInt = n match {
-    case 0 => Zero
-    case n => Suc(indInt(n-1))
-  }
-
   @isabelle.inductive
   def even(n: IndInt): Boolean = n match {
     case Zero => true

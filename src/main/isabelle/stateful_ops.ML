@@ -313,9 +313,10 @@ fun functions raw_funs =
       val names = map #1 (map #1 raw_funs)
 
       fun transform ((name, ind), raw_args, (raw_rhs, expected_typ)) =
-        let
+        let        
           val lhs = list_comb (Free (name, dummyT), map Free raw_args)
           val rhs = Type.constraint expected_typ raw_rhs
+          val _ = @{print} raw_rhs
         in
           ((Binding.make (name, @{here}), NONE, NoSyn),
            HOLogic.mk_Trueprop (Const (@{const_name HOL.eq}, dummyT) $ lhs $ rhs))
@@ -371,8 +372,8 @@ fun functions raw_funs =
           val _ = @{print} "ind_construction called."
           
           val (heads, props) = split_list specs
-          val _ = @{print} ("heads: " ^ @{make_string} heads)
-          val _ = @{print} ("props: " ^ @{make_string} props)
+          val _ = @{print} heads
+          val _ = @{print} props
         
          val lthy' = define_inductive ("even", @{typ "nat \<Rightarrow> bool"}) props lthy
         in
