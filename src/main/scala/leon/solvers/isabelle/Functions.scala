@@ -111,8 +111,9 @@ final class Functions(context: LeonContext, program: Program, types: Types, funs
           }
         case (true, true, false) =>
           context.reporter.fatalError(s"Conflicting annotations for function definition $qname; cannot combine isabelle.fullBody with extern or isabelle.noBody")
-        case (false, false, true) =>
-          val _ = println(s"Inductive detected.")
+        case (_, _, true) =>
+          println("Inductive detected.")
+          println("fun.fullBody: " + fun.fullBody)
           translator.term(fun.fullBody, Nil, lookup)
       }
 
