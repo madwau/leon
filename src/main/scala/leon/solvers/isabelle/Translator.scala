@@ -7,9 +7,11 @@ import scala.math.BigInt
 
 import leon.LeonContext
 import leon.purescala.Common._
+import leon.purescala.Constructors._
 import leon.purescala.Definitions._
 import leon.purescala.Expressions._
 import leon.purescala.ExprOps
+import leon.purescala.ExprOps._
 import leon.purescala.Types._
 import leon.utils._
 
@@ -40,10 +42,27 @@ final class Translator(context: LeonContext, program: Program, types: Types, sys
         App(Const("Leon_Library.error", Type("fun", List(Typ.dummyT, typ))), nat)
       }
     }
-
   private def arity(typ: TypeTree): Int = typ match {
+
     case t: TupleType => t.dimension
     case _ => context.reporter.internalError(s"Expected tuple type, got $typ")
+  }
+
+  def inductive(fun: FunDef, expr: Expr, bounds: List[Identifier], consts: (FunDef, Typ) => Term): Future[Term] = expr match {
+    case MatchExpr(scrutinee, cs) =>
+      println("cases: " + cs)
+
+      val clauses = cs map { 
+        case MatchCase(pat, _, rhs) =>
+          val (exp, _) = patternToExpression(pat, scrutinee.getType)
+          (rhs, FunctionInvocation(fun.typed, List(exp)))
+      }
+
+      val implications = cases(clauses.toList)
+
+      println("implications: " + implications)
+
+      term(implications, bounds, consts)
   }
 
   def term(expr: Expr, bounds: List[Identifier], consts: (FunDef, Typ) => Term): Future[Term] = {

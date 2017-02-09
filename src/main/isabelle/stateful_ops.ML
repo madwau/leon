@@ -316,6 +316,7 @@ fun functions raw_funs =
         let        
           val lhs = list_comb (Free (name, dummyT), map Free raw_args)
           val rhs = Type.constraint expected_typ raw_rhs
+          val _ = @{print} rhs
           val _ = @{print} raw_rhs
         in
           ((Binding.make (name, @{here}), NONE, NoSyn),
@@ -366,16 +367,51 @@ fun functions raw_funs =
          in
            lthy'
          end
+
+
+      fun gen_clauses ((name, ind), raw_args, (raw_rhs, expected_typ)) = 
+        let        
+           
+        in
+          ((Binding.make (name, @{here}), NONE, NoSyn),
+           raw_rhs)
+        end
+
  
       fun ind_construction lthy =
         let
           val _ = @{print} "ind_construction called."
           
-          val (heads, props) = split_list specs
-          val _ = @{print} heads
+          val ind_specs =
+            map gen_clauses raw_funs
+            |> split_list
+            ||> map (Syntax.check_term lthy)
+            ||> length raw_funs > 1 ? homogenize_raw_types lthy
+            ||> map (pair (Binding.empty, []))
+            |> op ~~
+
+          val (heads, props) = split_list ind_specs
+
           val _ = @{print} props
+
+          val mod_props = map (fn (_, p) => p) props
+
+          val _ = @{print} heads
+          val _ = @{print} mod_props
+
+          fun split_clauses props =
+            case props of
+              (xs $ x) => (split_clauses xs) @ [x]
+              | x => [x]
+
+          val splitted = tl(split_clauses (hd mod_props))
+          val _ = @{print} splitted
+
+          val clauses = map (fn c => ((Binding.name "", []), HOLogic.mk_Trueprop c)) splitted
+          val _ = @{print} clauses
+          
         
-         val lthy' = define_inductive ("even", @{typ "nat \<Rightarrow> bool"}) props lthy
+         val lthy' = define_inductive ("even", @{typ "nat \<Rightarrow> bool"}) clauses lthy
         in
           ([], lthy')
         end

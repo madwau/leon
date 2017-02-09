@@ -114,7 +114,7 @@ final class Functions(context: LeonContext, program: Program, types: Types, funs
         case (_, _, true) =>
           println("Inductive detected.")
           println("fun.fullBody: " + fun.fullBody)
-          translator.term(fun.fullBody, Nil, lookup)
+          translator.inductive(fun, fun.fullBody, Nil, lookup)
       }
 
       for {

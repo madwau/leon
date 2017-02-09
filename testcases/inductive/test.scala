@@ -9,8 +9,8 @@ object TestInductive {
 
   @isabelle.inductive
   def even(n: IndInt): Boolean = n match {
-    case Zero => true
     case Suc(Suc(n)) => even(n)
+    case Zero => true
   }
 
 }
