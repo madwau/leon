@@ -316,8 +316,6 @@ fun functions raw_funs =
         let        
           val lhs = list_comb (Free (name, dummyT), map Free raw_args)
           val rhs = Type.constraint expected_typ raw_rhs
-          val _ = @{print} rhs
-          val _ = @{print} raw_rhs
         in
           ((Binding.make (name, @{here}), NONE, NoSyn),
            HOLogic.mk_Trueprop (Const (@{const_name HOL.eq}, dummyT) $ lhs $ rhs))
@@ -347,19 +345,16 @@ fun functions raw_funs =
 
       val _ = @{print} ("Inductive: " ^ @{make_string} inductive)
       
-      fun define_inductive (id, typ) clauses lthy =
+      fun define_inductive (id, typ) term_bindings lthy =
          let 
-           fun bind_def id = (Binding.name (Thm.def_name id), [])
            fun bind_mixfix id = (Binding.name id, NoSyn)
-        
-          (* val term_bindings = map (fn (id, term) => ((Binding.name id, []), term)) clauses *)
-      
+
            val (_, lthy') =
             Inductive.add_ind_def
                {quiet_mode = false, verbose = false, alt_name = Binding.empty,
                   coind = false, no_elim = false, no_ind = false, skip_mono = false}
                [Free (id, typ)]
-               clauses
+               term_bindings
                []
                []
                [bind_mixfix id]
@@ -368,19 +363,11 @@ fun functions raw_funs =
            lthy'
          end
 
-
-      fun gen_clauses ((name, ind), raw_args, (raw_rhs, expected_typ)) = 
-        let        
-           
-        in
-          ((Binding.make (name, @{here}), NONE, NoSyn),
-           raw_rhs)
-        end
-
- 
       fun ind_construction lthy =
         let
           val _ = @{print} "ind_construction called."
+
+          fun gen_clauses ((name, _), _, (raw_rhs, _)) = (name, raw_rhs)
           
           val ind_specs =
             map gen_clauses raw_funs
@@ -392,26 +379,25 @@ fun functions raw_funs =
 
           val (heads, props) = split_list ind_specs
 
-          val _ = @{print} props
-
-          val mod_props = map (fn (_, p) => p) props
-
           val _ = @{print} heads
-          val _ = @{print} mod_props
+          val _ = @{print} props
 
           fun split_clauses props =
             case props of
               (xs $ x) => (split_clauses xs) @ [x]
               | x => [x]
 
-          val splitted = tl(split_clauses (hd mod_props))
-          val _ = @{print} splitted
-
-          val clauses = map (fn c => ((Binding.name "", []), HOLogic.mk_Trueprop c)) splitted
+          val clauses = tl(split_clauses (#2 (hd props)))
           val _ = @{print} clauses
-          
-        
-         val lthy' = define_inductive ("even", @{typ "nat \<Rightarrow> bool"}) clauses lthy
+
+          fun get_typ (Free (_, t) $ _) = t
+          val typ = get_typ (hd clauses)
+          val _ = @{print} typ
+
+          val term_bindings = map (fn c => ((Binding.name "", []), c)) clauses
+          val _ = @{print} term_bindings                                        
+
+          val lthy' = define_inductive (hd heads, typ) term_bindings lthy 
         in
           ([], lthy')
         end
