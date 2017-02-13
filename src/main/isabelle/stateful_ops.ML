@@ -378,26 +378,40 @@ fun functions raw_funs =
             |> op ~~
 
           val (heads, props) = split_list ind_specs
+          val (ind_name, (_, props)) = (hd heads, hd props)
 
           val _ = @{print} heads
           val _ = @{print} props
 
-          fun split_clauses props =
-            case props of
-              (xs $ x) => (split_clauses xs) @ [x]
-              | x => [x]
+          fun unique [] = []
+            | unique (x::xs) = x::unique(List.filter (fn y => y <> x) xs)
+          
+          fun convert ind_name cl =
+            case cl of
+              (Const ("HOL.implies", _) $ p $ q) =>
+                let
+                  val imp = Logic.mk_implies (HOLogic.mk_Trueprop p, HOLogic.mk_Trueprop q)
+                  val frees_all = all_frees imp
+                  val frees_filtered = filter (fn (name, typ) => ind_name <> name) frees_all
+                  val frees_unique = unique frees_filtered
+                  val frees = map Free frees_unique
+                  val _ = @{print} frees
+                in
+                  List.foldr (fn (f, t) => Logic.all f t) imp frees
+                end
+              | p => HOLogic.mk_Trueprop p
 
-          val clauses = tl(split_clauses (#2 (hd props)))
+          val clauses = map (convert ind_name) (HOLogic.dest_conj props)
           val _ = @{print} clauses
 
-          fun get_typ (Free (_, t) $ _) = t
-          val typ = get_typ (hd clauses)
+
+          val (_, typ) = hd (filter (fn (name, typ) => ind_name = name) (all_frees props))
           val _ = @{print} typ
 
           val term_bindings = map (fn c => ((Binding.name "", []), c)) clauses
           val _ = @{print} term_bindings                                        
 
-          val lthy' = define_inductive (hd heads, typ) term_bindings lthy 
+          val lthy' = define_inductive (ind_name, typ) term_bindings lthy 
         in
           ([], lthy')
         end
