@@ -349,7 +349,7 @@ fun functions raw_funs =
          let 
            fun bind_mixfix id = (Binding.name id, NoSyn)
 
-           val (_, lthy') =
+           val ({intrs, ...}, lthy') =
             Inductive.add_ind_def
                {quiet_mode = false, verbose = false, alt_name = Binding.empty,
                   coind = false, no_elim = false, no_ind = false, skip_mono = false}
@@ -360,7 +360,7 @@ fun functions raw_funs =
                [bind_mixfix id]
                lthy
          in
-           lthy'
+           (intrs, lthy')
          end
 
       fun ind_construction lthy =
@@ -411,9 +411,9 @@ fun functions raw_funs =
           val term_bindings = map (fn c => ((Binding.name "", []), c)) clauses
           val _ = @{print} term_bindings                                        
 
-          val lthy' = define_inductive (ind_name, typ) term_bindings lthy 
+          val (intros, lthy') = define_inductive (ind_name, typ) term_bindings lthy 
         in
-          ([], lthy')
+          (intros, lthy')
         end
 
       fun fun_construction lthy =
@@ -440,10 +440,9 @@ fun functions raw_funs =
         | (true, false, false) => fun_construction
         | (false, _, false) => def_construction
         | (_, _, true) => ind_construction)
-    in
-      case Exn.interruptible_capture construction lthy of
-        Exn.Res (thms, lthy') =>
-          let
+
+      fun fun_postprocessing thms lthy' = 
+        let
             val get_typ =
               Thm.prop_of #> HOLogic.dest_Trueprop #> HOLogic.dest_eq #> fst
               #> strip_comb #> fst
@@ -473,6 +472,26 @@ fun functions raw_funs =
           in
             (NONE, lthy''')
           end
+
+      fun ind_postprocessing thms lthy' =
+        let
+            val _ = @{print} thms
+
+            val lthy'' = Local_Theory.close_target lthy'
+            val intros = Proof_Context.export lthy' lthy'' thms
+            
+            val lthy''' = lthy''
+              |> Local_Theory.note ((Binding.empty, @{attributes [intro]}), intros)
+              |> snd
+           in
+             (NONE, lthy''')
+           end
+    in
+      case Exn.interruptible_capture construction lthy of
+        Exn.Res (thms, lthy') =>
+          (case inductive of
+            true => ind_postprocessing thms lthy'
+            | false => fun_postprocessing thms lthy')
       | Exn.Exn (exn as Impossible _) =>
           reraise exn
       | Exn.Exn exn =>
