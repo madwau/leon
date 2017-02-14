@@ -45,13 +45,13 @@ object MiniIMP{
   case class If(b: Bexp, c1: Com, c2: Com) extends Com
   case class While(b: Bexp, c: Com) extends Com
   
-  // @isabelle.inductive
+  @isabelle.inductive
   def big_step(c: Com, s1: String => Int, s2: String => Int): Boolean =
     (c, s1, s2) match {
       case (Skip, s1, s2) =>
         s1 == s2
       case (Assign(x, a), s1, s2) =>
-        s2 == aval(a, s1)
+        s2(x) == aval(a, s1)
       case (Seq(c1, c2), s1, s3) =>
         exists { (s2: String => Int) =>
           big_step(c1, s1, s2) &&

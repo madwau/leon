@@ -70,6 +70,8 @@ object ExprOps extends GenTreeOps[Expr] {
         Lambda(args, rec(binders ++ args.map(_.id), bd)).copiedFrom(l)
       case f@Forall(args, bd) =>
         Forall(args, rec(binders ++ args.map(_.id), bd)).copiedFrom(f)
+      case s@Exists(args, bd) =>
+        Exists(args, rec(binders ++ args.map(_.id), bd)).copiedFrom(e)
       case d@Deconstructor(subs, builder) =>
         builder(subs map (rec(binders, _))).copiedFrom(d)
     }
@@ -94,6 +96,7 @@ object ExprOps extends GenTreeOps[Expr] {
           case Passes(_, _, cses) => subvs -- cses.flatMap(_.pattern.binders)
           case Lambda(args, _) => subvs -- args.map(_.id)
           case Forall(args, _) => subvs -- args.map(_.id)
+          case Exists(args, _) => subvs -- args.map(_.id)
           case _ => subvs
         }
     }(expr)
@@ -328,6 +331,10 @@ object ExprOps extends GenTreeOps[Expr] {
           val (args, body, newSubst) = normalizeStructure(f.args.map(_.id), f.body, onlySimple)
           subst ++= newSubst
           Forall(args.map(ValDef(_)), body)
+        case e: Exists =>
+          val (args, body, newSubst) = normalizeStructure(e.args.map(_.id), e.body, onlySimple)
+          subst ++= newSubst
+          Exists(args.map(ValDef(_)), body)
         case l: Lambda =>
           val (args, body, newSubst) = normalizeStructure(l.args.map(_.id), l.body, onlySimple)
           subst ++= newSubst
@@ -356,6 +363,11 @@ object ExprOps extends GenTreeOps[Expr] {
     (Forall(args.map(ValDef(_)), body), subst)
   }
 
+  def normalizeStructure(exists: Exists): (Exists, Map[Identifier, Expr]) = {
+    val (args, body, subst) = normalizeStructure(exists.args.map(_.id), exists.body)
+    (Exists(args.map(ValDef(_)), body), subst)
+  }
+
   /** Returns '''true''' if the formula is Ground,
     * which means that it does not contain any variable ([[purescala.ExprOps#variablesOf]] e is empty)
     * and [[purescala.ExprOps#isDeterministic isDeterministic]]
@@ -371,7 +383,8 @@ object ExprOps extends GenTreeOps[Expr] {
   def isSimple(e: Expr): Boolean = !exists {
     case (_: Choose) | (_: Hole) |
          (_: Assert) | (_: Ensuring) |
-         (_: Forall) | (_: Lambda) | (_: FiniteLambda) |
+         (_: Forall) | (_: Exists) |
+         (_: Lambda) | (_: FiniteLambda) |
          (_: FunctionInvocation) | (_: Application) => true
     case _ => false
   } (e)
