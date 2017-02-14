@@ -273,6 +273,12 @@ object Expressions {
     val getType = BooleanType
   }
 
+  /* Existential Quantification */
+
+  case class Exists(args: Seq[ValDef], body: Expr) extends Expr {
+    val getType = BooleanType
+  }
+
   /* Control flow */
 
   /** $encodingof  `function(...)` (function invocation) */

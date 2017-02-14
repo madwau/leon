@@ -789,6 +789,16 @@ trait ASTExtractors {
       }
     }
 
+    object ExExistsExpression {
+      def unapply(tree: Apply) : Option[(List[(Tree, Symbol)], Tree)] = tree match {
+        case a @ Apply(
+            TypeApply(s @ ExSymbol("leon", "lang", "exists"), types),
+            Function(vds, predicateBody) :: Nil) =>
+          Some((types zip vds.map(_.symbol), predicateBody))
+        case _ => None
+      }
+    }
+
     object ExArrayForallExpression {
       def unapply(tree: Apply) : Option[(Tree, Tree)] = tree match {
         case a @ Apply(

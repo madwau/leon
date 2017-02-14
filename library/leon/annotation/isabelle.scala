@@ -23,12 +23,12 @@ object isabelle {
 
   @ignore
   class fullBody() extends StaticAnnotation
-  
-  @ignore
-  class inductive() extends StaticAnnotation
 
   @ignore
   class noBody() extends StaticAnnotation
+
+  @ignore
+  class inductive() extends StaticAnnotation
 
   @ignore
   class lemma(about: String) extends StaticAnnotation

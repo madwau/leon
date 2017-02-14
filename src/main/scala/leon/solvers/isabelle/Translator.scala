@@ -205,6 +205,9 @@ final class Translator(context: LeonContext, program: Program, types: Types, sys
       case Forall(args, expr) =>
         mkAbs(args.map(_.id).toList, expr, bounds, wrap = mkApp(Const("HOL.All", Typ.dummyT), _))
 
+      case Exists(args, expr) =>
+        mkAbs(args.map(_.id).toList, expr, bounds, wrap = mkApp(Const("HOL.Ex", Typ.dummyT), _))
+
       case CaseClass(typ, exprs) =>
         lookupConstructor(typ).map(_.term).flatMap { nary(_, exprs: _*) }
 
