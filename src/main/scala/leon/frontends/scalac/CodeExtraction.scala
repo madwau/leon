@@ -1655,6 +1655,21 @@ trait CodeExtraction extends ASTExtractors {
 
           Forall(vds, exBody)
 
+        case ExExistsExpression(args, body) =>
+          val vds = args map { case (tpt, sym) =>
+            val aTpe = extractType(tpt)
+            val newID = FreshIdentifier(sym.name.toString, aTpe)
+            LeonValDef(newID)
+          }
+
+          val newVars = (args zip vds).map { case ((_, sym), lvd) =>
+            sym -> (() => lvd.toVariable)
+          }
+
+          val exBody = extractTree(body)(dctx.withNewVars(newVars))
+
+          Exists(vds, exBody)
+
         case f @ ExArrayForallExpression(array, pred) =>
           val a = extractTree(array)
           val lambda = extractTree(pred)

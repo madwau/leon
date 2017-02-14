@@ -34,6 +34,10 @@ trait TreeTransformer {
       val newArgs = args.map(vd => ValDef(transform(vd.id)))
       val newBindings = (args zip newArgs).map(p => p._1.id -> p._2.id)
       Forall(newArgs, transform(body)(bindings ++ newBindings)).copiedFrom(e)
+    case Exists(args, body) =>
+      val newArgs = args.map(vd => ValDef(transform(vd.id)))
+      val newBindings = (args zip newArgs).map(p => p._1.id -> p._2.id)
+      Exists(newArgs, transform(body)(bindings ++ newBindings)).copiedFrom(e)
     case Let(a, expr, body) =>
       val newA = transform(a)
       Let(newA, transform(expr), transform(body)(bindings + (a -> newA))).copiedFrom(e)
@@ -160,6 +164,9 @@ trait TreeTraverser {
       args foreach (vd => traverse(vd.id))
       traverse(body)
     case Forall(args, body) =>
+      args foreach (vd => traverse(vd.id))
+      traverse(body)
+    case Exists(args, body) =>
       args foreach (vd => traverse(vd.id))
       traverse(body)
     case Let(a, expr, body) =>

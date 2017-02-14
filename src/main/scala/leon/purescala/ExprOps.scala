@@ -70,8 +70,8 @@ object ExprOps extends GenTreeOps[Expr] {
         Lambda(args, rec(binders ++ args.map(_.id), bd)).copiedFrom(l)
       case f@Forall(args, bd) =>
         Forall(args, rec(binders ++ args.map(_.id), bd)).copiedFrom(f)
-      case s@Exists(args, bd) =>
-        Exists(args, rec(binders ++ args.map(_.id), bd)).copiedFrom(e)
+      case ex@Exists(args, bd) =>
+        Exists(args, rec(binders ++ args.map(_.id), bd)).copiedFrom(ex)
       case d@Deconstructor(subs, builder) =>
         builder(subs map (rec(binders, _))).copiedFrom(d)
     }

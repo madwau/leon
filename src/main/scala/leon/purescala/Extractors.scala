@@ -82,6 +82,8 @@ object Extractors {
         Some((subArgs :+ dflt, builder))
       case Forall(args, body) =>
         Some((Seq(body), (es: Seq[Expr]) => Forall(args, es.head)))
+      case Exists(args, body) =>
+        Some((Seq(body), (es: Seq[Expr]) => Exists(args, es.head)))
       case BVNarrowingCast(expr, newType) =>
         Some((Seq(expr), (es: Seq[Expr]) => BVNarrowingCast(es.head, newType)))
       case BVWideningCast(expr, newType) =>
