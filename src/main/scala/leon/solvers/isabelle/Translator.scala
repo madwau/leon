@@ -55,7 +55,15 @@ final class Translator(context: LeonContext, program: Program, types: Types, sys
       val clauses = cs map { 
         case MatchCase(pat, _, rhs) =>
           val (exp, _) = patternToExpression(pat, scrutinee.getType)
-          (rhs, FunctionInvocation(fun.typed, List(exp)))
+
+          val args = exp match {
+            case Tuple(exprs) =>
+              exprs
+            case arg =>
+              List(arg)
+          }
+
+          (rhs, FunctionInvocation(fun.typed, args))
       }
 
       val implications = cases(clauses.toList)
