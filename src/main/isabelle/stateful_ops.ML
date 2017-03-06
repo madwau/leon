@@ -341,7 +341,7 @@ fun functions raw_funs =
             end
         | _ => true
         
-      val inductive = not (exists (equal false) (map #2 (map #1 raw_funs)))
+      val inductive = List.all (equal true) (map (#2 o #1) raw_funs)
 
       val _ = @{print} ("Inductive: " ^ @{make_string} inductive)
       
@@ -378,6 +378,9 @@ fun functions raw_funs =
             |> op ~~
 
           val (heads, props) = split_list ind_specs
+
+          val _ = @{print} (hd props)
+
           val (ind_name, (_, props)) = (hd heads, hd props)
 
           val _ = @{print} heads
@@ -403,7 +406,6 @@ fun functions raw_funs =
 
           val clauses = map (convert ind_name) (HOLogic.dest_conj props)
           val _ = @{print} clauses
-
 
           val (_, typ) = hd (filter (fn (name, typ) => ind_name = name) (all_frees props))
           val _ = @{print} typ

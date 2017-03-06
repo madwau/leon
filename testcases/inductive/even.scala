@@ -2,7 +2,7 @@ import leon.annotation._
 import leon.lang._
 import leon.math._
 
-object TestInductive {
+object Even {
 
   @isabelle.inductive  
   def even(n: Nat): Boolean = n match {
